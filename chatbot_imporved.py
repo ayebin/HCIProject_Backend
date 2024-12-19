@@ -1,5 +1,5 @@
 import os
-import fitz  # PyMuPDF
+import fitz  
 import pickle
 from concurrent.futures import ThreadPoolExecutor
 from langchain_openai import ChatOpenAI
@@ -10,7 +10,6 @@ from tavily import TavilyClient
 os.environ["TAVILY_API_KEY"] = "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"
 os.environ["OPENAI_API_KEY"] = "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"
 
-# Google Drive에서 PDF 파일을 로드하는 함수
 def load_pdfs_from_drive(drive_folder_path):
     pdf_files = []
     for root, dirs, files in os.walk(drive_folder_path):
@@ -19,7 +18,6 @@ def load_pdfs_from_drive(drive_folder_path):
                 pdf_files.append(os.path.join(root, file))
     return pdf_files
 
-# PDF에서 텍스트를 병렬로 추출하는 함수 (PyMuPDF 활용)
 def extract_text_from_pdfs_parallel(pdf_paths):
     def process_pdf(path):
         text = ""
@@ -35,49 +33,38 @@ def extract_text_from_pdfs_parallel(pdf_paths):
             pdf_texts[path] = text
     return pdf_texts
 
-# PDF 텍스트 캐싱 저장 함수
 def cache_pdf_texts(pdf_texts, cache_path="pdf_cache.pkl"):
     with open(cache_path, "wb") as cache_file:
         pickle.dump(pdf_texts, cache_file)
 
-# PDF 텍스트 캐싱 로드 함수
 def load_cached_texts(cache_path="pdf_cache.pkl"):
     if os.path.exists(cache_path):
         with open(cache_path, "rb") as cache_file:
             return pickle.load(cache_file)
     return {}
 
-# PDF에서 텍스트를 추출하는 함수 (병렬 처리 + 캐싱 적용)
 def extract_text_from_pdfs(pdf_paths, cache_path="pdf_cache.pkl"):
-    # 캐싱 데이터 로드
     cached_texts = load_cached_texts(cache_path)
-    # 아직 처리되지 않은 PDF만 추출
     remaining_files = [path for path in pdf_paths if path not in cached_texts]
 
     if remaining_files:
-        # 병렬로 처리
         new_texts = extract_text_from_pdfs_parallel(remaining_files)
-        # 기존 캐싱 데이터와 병합
         cached_texts.update(new_texts)
-        # 캐싱 데이터 저장
         cache_pdf_texts(cached_texts, cache_path)
 
     return cached_texts
 
-# Tavily API를 사용하여 검색하는 함수
 def tavily_search_tool(query):
     client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
     result = client.search(query, search_depth="advanced")["results"]
     return result
 
-# PDF에서 특정 질의에 대해 검색하는 함수
 def search_in_pdfs_tool(query, pdf_texts):
     for file, content in pdf_texts.items():
         if query.lower() in content.lower():
             return f"PDF에서 찾음 ({file}):\n{content}"
     return "해당 PDF에서 관련 정보를 찾을 수 없습니다."
 
-# ReAct 도구 목록 초기화
 def initialize_react_tools(pdf_texts):
     pdf_search_tool_instance = Tool(
         name="search_pdfs",
@@ -98,7 +85,6 @@ def initialize_react_tools(pdf_texts):
     )
     return [pdf_search_tool_instance, tavily_search_tool_instance]
 
-# ReAct 에이전트 초기화
 def initialize_react_agent(tools):
     memory = ConversationBufferMemory(memory_key="chat_history")
     llm = ChatOpenAI(model="gpt-4o-mini", openai_api_key=os.getenv("OPENAI_API_KEY"))
@@ -108,11 +94,10 @@ def initialize_react_agent(tools):
         agent="conversational-react-description",
         memory=memory,
         verbose=True,
-        handle_parsing_errors=True,  # 파싱 오류 핸들링 활성화
+        handle_parsing_errors=True, 
     )
     return agent
 
-# 여행 일정을 생성하는 함수
 def generate_schedule_response(agent, user_information, user_detail, user_message):
     prompt = f"""
     당신은 여행 계획 전문가입니다. 사용자가 여행 계획을 요청하면 PDF 데이터와 인터넷 검색 도구를 활용하여 최고의 계획을 생성하십시오.
@@ -168,14 +153,14 @@ def generate_schedule_response(agent, user_information, user_detail, user_messag
     output = response['output']
     return output
 
-# 메인 함수
+# Main
 def implementation(user_information, user_detail, user_message, agent=None, folder_path=None):
-    pdf_files = load_pdfs_from_drive(folder_path)  # Google Drive에서 PDF 파일 로드
-    pdf_texts = extract_text_from_pdfs(pdf_files)  # PDF 텍스트 추출 (병렬 처리 + 캐싱)
+    pdf_files = load_pdfs_from_drive(folder_path) 
+    pdf_texts = extract_text_from_pdfs(pdf_files)  
 
     if agent is None:
-        tools = initialize_react_tools(pdf_texts)  # ReAct 도구 초기화
-        agent = initialize_react_agent(tools)  # ReAct 에이전트 초기화
+        tools = initialize_react_tools(pdf_texts) 
+        agent = initialize_react_agent(tools) 
 
     bot_message = generate_schedule_response(agent, user_information, user_detail, user_message)  # 일정 생성
     return bot_message

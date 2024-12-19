@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models import db, Session, Message, Sender, Info, InfoDetail
 from datetime import datetime
-from chatbot import tuning_run
+from chatbot_imporved import tuning_run
 from user_format import basic_format, detail_format
 import re
 from summary import extract_summary
