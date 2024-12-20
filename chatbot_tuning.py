@@ -6,8 +6,8 @@ from langchain.memory import ConversationBufferMemory
 from langchain_community.chat_models import ChatOpenAI
 from tavily import TavilyClient
 
-os.environ["TAVILY_API_KEY"] = "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"
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["TAVILY_API_KEY"] = "your_tavily_api"
+os.environ["OPENAI_API_KEY"] = "your_openai_api"
 
 def extract_text_from_pdfs(pdf_paths):
     pdf_texts = {}
